@@ -17,16 +17,12 @@ extern int NUM_THREADS;
 Netlist::Netlist(int NUM_THREADS,Grid_Graph G, const std::vector<int>& v1, const std::vector<int>& v2, const std::vector<int>& v3, const std::vector<int>& v4) {
     
     int N = v1.size();
-    //std::cerr << "here " <<std::endl;
     nets.resize(N);
     for (auto& net : nets) {
-        net.route.reserve(ROUTE_MEM_ESTIMATE); // Initialize route vector with capacity ROUTE_MEM_ESTIMATE, so as to minimize later time wasted in alloccations
+        net.route.reserve(ROUTE_MEM_ESTIMATE); // Initialize route vector with capacity ROUTE_MEM_ESTIMATE, so as to minimize later time wasted in allocations
     }
-    //std::cerr << "here " << nets.size() <<std::endl;
-    //std::cerr << "here " <<std::endl;
-    //#pragma omp parallel for num_threads(NUM_THREADS)
+    #pragma omp parallel for num_threads(NUM_THREADS)
     for (int i = 0; i < N; ++i) {
-        //std::cerr << "here " <<std::endl;
         Point point = {v1[i], v4[i]};
         for (int y = v2[i]; y <= point.y; y++) {
             G.Gy[v1[i] * (G.M + 1) + y] += 1;
@@ -40,16 +36,11 @@ Netlist::Netlist(int NUM_THREADS,Grid_Graph G, const std::vector<int>& v1, const
         for (int x = v3[i]; x < point.x; x++) {
             G.Gx[v4[i] * (G.N + 1) + x] += 1;
         }
-       // std::cerr << "here n " <<std::endl;
         nets[i].x1 = v1[i];
-        //std::cerr << "here f" <<std::endl;
         nets[i].y1 = v2[i];
-        //std::cerr << "here b" <<std::endl;
         nets[i].x2 = v3[i];
         nets[i].y2 = v4[i];
-        //std::cerr << "here m" <<std::endl;
         if (!(((point.x==nets[i].x1)&&(point.y==nets[i].y1))||((point.x==nets[i].x2)&&(point.y==nets[i].y2)))){
-            //std::cerr << "here " <<std::endl;
             nets[i].route.push_back(point);
         }
     }
@@ -102,9 +93,7 @@ void Netlist::pattern_schedule() {
             if (clique[l]==j){
                 batches[j].nets.emplace_back(nets[l]);
             }
-            //std::cerr << "pshed back " << j << std::endl;
         }
-        //std::cerr << "pshed back " << j << std::endl;
     }
     std::cerr << "Done pushing " << std::endl;
     for (int kk = 0; kk<batches.size();kk++){
@@ -168,7 +157,6 @@ void Netlist::maze_schedule(Grid_Graph G,float k, int BOX_MIN_DIM) {
             if (clique[l]==j){
                 batches[j].nets.emplace_back(nets[l]);
             }
-            //std::cerr << "pshed back " << j << std::endl;
         }
         std::cerr << "pshed back " << j << std::endl;
     }
@@ -189,11 +177,9 @@ void Netlist::maze_schedule(Grid_Graph G,float k, int BOX_MIN_DIM) {
 
 // Function for simulated annealing pattern routing
 float Netlist::SA_patternroute(Grid_Graph G) {
-    //std::cerr << "Starting SA_patternroute..." << std::endl;
 
     float T = 1000;
     int N = nets.size();
-    //std::cerr << "Initial temperature: " << T << ", Number of nets: " << N << std::endl;
 
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -202,44 +188,32 @@ float Netlist::SA_patternroute(Grid_Graph G) {
 
     float tot_cost = std::numeric_limits<float>::max();
     float new_tot_cost = 0;
-    
-    // Debug: Processing batches initially
-    //std::cerr << "Processing batches initially..." << std::endl;
+  
     for (auto& batch : batches) {
         new_tot_cost += batch.pattern_route(G, 0, T, 1);
     }
     tot_cost = new_tot_cost;
-    //std::cerr << "Initial total cost: " << tot_cost << std::endl;
 
     // Start the simulated annealing process
-    //std::cerr << "Starting simulated annealing process..." << std::endl;
     while (T > 0.01) {
         new_tot_cost = 0;
-        
-        // Debug: Processing each batch
-        //std::cerr << "Processing batches at T=" << T << std::endl;
         for (auto& batch : batches) {
             new_tot_cost += batch.pattern_route(G, 0, T, dist(gen));
         }
         tot_cost = new_tot_cost;
         T *= 0.995;
         costs.push_back(tot_cost);
-        //std::cerr << "Current cost after processing: " << tot_cost << std::endl;
     }
 
     // Save patterns for each batch
-    //std::cerr << "Saving patterns..." << std::endl;
     int k = 0;
     for (auto& batch : batches) {
-        //std::cerr << "Saving pattern for batch, starting at index " << k << std::endl;
         k += batch.N;
     }
 
     // Write costs to output file
-    //std::cerr << "Writing costs to output file: " << costfile << std::endl;
     std::ofstream outputFile(costfile);
     if (!outputFile.is_open()) {
-        //std::cerr << "Error: Unable to open file!" << std::endl;
         return -1.0f;
     }
 
