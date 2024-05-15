@@ -72,3 +72,9 @@ Run the input and the output files through the Evaluator.py script
 python3 Evaluator.py <input filename> <output filename>
 ```
 
+## Using Makefile
+There is a Makefile present in the repository, that can also be used by running the following command
+
+```bash
+make
+```
